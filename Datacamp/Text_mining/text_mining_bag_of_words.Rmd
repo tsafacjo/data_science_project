@@ -637,6 +637,488 @@ Simple word clustering for topics
 Analysis on more than one word
 For now, let's simply create a new visual called a dendrogram from our coffee_tweets. The next chapter will explain it in detail.
 
+## Make a dendrogram friendly TDM
+
+```{r}
+# Print the dimensions of tweets_tdm
+
+dim(tweets_tdm)
+# Create tdm1
+tdm1  <- removeSparseTerms(tweets_tdm,sparse = 0.95)
+
+# Create tdm2
+
+tdm2 <- removeSparseTerms(tweets_tdm,sparse = 0.975)
+# Print tdm1
+tdm1
+
+# Print tdm2
+tdm2
+```
+
+
+```{r}
+# Create tweets_tdm2
+
+ tweets_tdm2 <- removeSparseTerms(tweets_tdm, sparse = 0.975)
+# Create tdm_m
+tdm_m <- as.matrix(tweets_tdm2)
+
+# Create tweets_dist
+
+tweets_dist <- dist(tweets_tdm2)
+# Create hc
+hc =hclust(tweets_dist)
+
+
+# Plot the dendrogram
+plot(hc)
+```
+# A better dendogramm 
+
+```{r}
+#Create hcd as a dendrogram using as.dendrogram() on hc
+
+# Create hcd
+hcd = as.dendrogram(hc)
+
+# Print the labels in hcd
+hcd
+
+# Change the branch color to red for "marvin" and "gaye"
+hcd_colored <- branches_attr_by_labels(hcd, c("marvin", "gaye"), color = 'red')
+
+# Plot hcd
+plot(hcd, main = "Better Dendrogram")
+
+# Add cluster rectangles
+rect.dendrogram(hcd_colored, k = 2, border = "grey50")
+```
+
+## Using word association
+
+Another way to think about word relationships is with the findAssocs() function in the tm package. For any given word, findAssocs() calculates its correlation with every other word in a TDM or DTM. Scores range from 0 to 1. A score of 1 means that two words always appear together in documents, while a score approaching 0 means the terms seldom appear in the same document.
+
+Keep in mind the calculation for findAssocs() is done at the document level. So for every document that contains the word in question, the other terms in those specific documents are associated. Documents without the search term are ignored.
+
+To use findAssocs() pass in a TDM or DTM, the search term, and a minimum correlation. The function will return a list of all other terms that meet or exceed the minimum threshold.
+```{r}
+#Create associations using findAssocs() on tweets_tdm to find terms associated with "venti", which meet a minimum threshold of 0.2
+# Create associations
+
+ associations <- findAssocs(tweets_tdm, "venti", 0.2)
+# View the venti associations
+associations
+#Create associations_df, by calling list_vect2df(), passing associations, then setting col2 to "word" and #col3 to "score"
+# Create associations_df
+associations_df <- list_vect2df(associations, col2=  "word" , col3 = "score")
+
+# Plot the associations_df values
+ggplot(associations_df, aes(score, word)) + 
+  geom_point(size = 3) + 
+  theme_gdocs()
+
+```
+
+# Changing n-grams
+So far, we have only made TDMs and DTMs using single words. The default is to make them with unigrams, but you can also focus on tokens containing two or more words. This can help extract useful phrases which lead to some additional insights or provide improved predictive attributes for a machine learning algorithm.
+
+The function below uses the RWeka package to create trigram (three word) tokens: min and max are both set to 3.
+
+tokenizer <- function(x) {
+  NGramTokenizer(x, Weka_control(min = 3, max = 3))
+}
+Then the customized tokenizer() function can be passed into the TermDocumentMatrix or DocumentTermMatrix functions as an additional parameter:
+
+tdm <- TermDocumentMatrix(
+  corpus, 
+  control = list(tokenize = tokenizer)
+)
+
+```{r}
+# Make tokenizer function 
+tokenizer <- function(x) {
+  NGramTokenizer(x, Weka_control(min = 2, max = 2))
+}
+
+# Create unigram_dtm
+unigram_dtm <- DocumentTermMatrix(text_corp)
+
+# Create bigram_dtm
+bigram_dtm <- DocumentTermMatrix(
+  text_corp, 
+  control = list(tokenize = tokenizer)
+)
+
+# Print unigram_dtm
+unigram_dtm
+
+# Print bigram_dtm
+bigram_dtm
+```
+
+# How do bigrams affect word clouds?
+
+Now that you have made a bigram DTM, you can examine it and remake a word cloud. The new tokenization method affects not only the matrices, but also any visuals or modeling based on the matrices.
+
+Remember how "Marvin" and "Gaye" were separate terms in the chardonnay word cloud? Using bigram tokenization grabs all two word combinations. Observe what happens to the word cloud in this exercise.
+
+This exercise uses str_subset from stringr. Keep in mind, other DataCamp courses cover regular expressions in more detail. As a reminder, the regular expression ^ matches the starting position within the exercise's bigrams.
+
+
+```{r}
+# Create bigram_dtm_m
+
+bigram_dtm_m <- as.matrix(bigram_dtm)
+# Create freq
+freq <- colSums(bigram_dtm_m)
+# Create bi_words
+bi_words <- names(freq)
+# Examine part of bi_words
+str_subset(bi_words,"^marvin")
+# Plot a wordcloud
+wordcloud(bi_words,freq,max.words = 15)
+```
+
+
+```{r}
+# Create a TDM
+tdm <- TermDocumentMatrix(text_corp)
+
+# Convert it to a matrix
+tdm_m <- as.matrix(tdm)
+
+# Examine part of the matrix
+tdm_m[c("coffee", "espresso", "latte"), 161:166 ] 
+
+```
+
+# tidf 
+
+```{r}
+# Create a TDM
+tdm <- TermDocumentMatrix(text_corp, control = list(weighting = weightTfIdf))
+
+# Convert it to a matrix
+tdm_m <- as.matrix(tdm)
+
+# Examine part of the matrix
+tdm_m[c("coffee", "espresso", "latte"), 161:166 ] 
+
+```
+
+# Capturing metadata in tm
+
+
+```{r}
+# Rename the first column of tweets to "doc_id".
+# Rename columns
+names(tweets)[1] <- "doc_id"
+
+# Set the schema: docs
+docs <- DataframeSource(tweets)
+
+# Make a clean volatile corpus: text_corpus
+text_corpus <- clean_corpus(VCorpus(docs))
+
+# Examine the first doc content
+content(text_corpus[[1]])
+
+# Access the first doc metadata
+meta(text_corpus[1])
+```
+
+
+# WORFLOW 
+
+The main steps in a text mining project are :
+
+- Problem definition
+- unorganized state
+- Organisation
+- Feature Extraction
+- Analysis
+- Organized state
+
+
+# case study 
+Exercise
+Exercise
+Step 2: Identifying the text sources
+Employee reviews can come from various sources. If your human resources department had the resources, you could have a third party administer focus groups to interview employees both internally and from your competitor.
+
+Forbes and others publish articles about the "best places to work", which may mention Amazon and Google. Another source of information might be anonymous online reviews from websites like Indeed, Glassdoor or CareerBliss.
+
+Here, we'll focus on a collection of anonymous online revie
+
+```{r}
+# View the structure of amzn with str() to get its dimensions and a preview of the data
+# Print the structure of amzn
+str(amzn)
+#reate amzn_cons from the negative reviews column amzn$cons
+# Create amzn_pros
+amzn_pros <- amzn$pros
+# Create amzn_cons
+amzn_cons <- amzn$cons
+
+# Print the structure of goog
+str(goog)
+# Create goog_pros
+goog_pros <- goog$pros
+# Create goog_cons
+goog_cons <- goog$cons
+```
+
+# cleaning 
+
+```{r}
+# qdap_clean the text
+
+qdap_cleaned_amzn_pros <- qdap_clean(amzn_pros)
+# Source and create the corpus
+amzn_p_corp <- VCorpus(VectorSource(qdap_cleaned_amzn_pros))
+
+# tm_clean the corpus
+amzn_pros_corp <- tm_clean(amzn_p_corp)
+
+
+```
+
+
+```{r}
+# qdap_clean the text
+
+qdap_cleaned_amzn_cons = qdap_clean(amzn_cons)
+
+# Source and create the corpus
+amzn_c_corp = VCorpus(VectorSource(qdap_cleaned_amzn_cons))
+
+# tm_clean the corpus
+amzn_cons_corp = tm_clean(amzn_c_corp)
+
+```
+
+```{r}
+
+# qdap_clean the text
+qdap_cleaned_goog_pros <- qdap_clean(goog_pros)
+
+# Source and create the corpus
+goog_p_corp <- VCorpus(VectorSource(qdap_cleaned_goog_pros))
+
+# tm_clean the corpus
+goog_pros_corp <-  tm_clean(goog_p_corp)
+
+```
+
+
+```{r}
+# qdap_clean the text
+qdap_cleaned_goog_pros <- qdap_clean(goog_pros)
+
+# Source and create the corpus
+goog_p_corp <- VCorpus(VectorSource(qdap_cleaned_goog_pros))
+
+# tm_clean the corpus
+goog_pros_corp <-  tm_clean(goog_p_corp)
+
+
+# qdap_clean the text
+qdap_cleaned_goog_cons <- qdap_clean(goog_cons)
+
+# Source and create the corpus
+goog_c_corp <- VCorpus(VectorSource(qdap_cleaned_goog_cons ))
+
+# tm_clean the corpus
+goog_cons_corp <-  tm_clean(goog_c_corp)
+
+```
+
+Feature extraction & analysis: amzn_pros
+amzn_pros_corp, amzn_cons_corp, goog_pros_corp and goog_cons_corp have all been preprocessed, so now you can extract the features you want to examine. Since you are using the bag of words approach, you decide to create a bigram TermDocumentMatrix for Amazon's positive reviews corpus, amzn_pros_corp. From this, you can quickly create a wordcloud() to understand what phrases people positively associate with working at Amazon.
+
+The function below uses RWeka to tokenize two terms and is used behind the scenes in this exercise.
+
+tokenizer <- function(x) {
+  NGramTokenizer(x, Weka_control(min = 2, max = 2))
+}
+
+
+```{r}
+
+# Create amzn_p_tdm as a TermDocumentMatrix from amzn_pros_corp. Make sure to add control = list(tokenize = tokenizer) so that the terms are bigrams.
+# Create amzn_p_tdm
+tokenizer <- function(x) {
+  NGramTokenizer(x, Weka_control(min = 2, max = 2))
+}
+amzn_p_tdm <- TermDocumentMatrix(amzn_pros_corp, control = list(tokenize = tokenizer))
+
+# Create amzn_p_tdm_m
+amzn_p_tdm_m <- as.matrix(amzn_p_tdm)
+
+# Create amzn_p_freq to obtain the term frequencies from amzn_p_tdm_m.
+amzn_p_freq <- rowSums(amzn_p_tdm_m)
+# Create amzn_p_freq
+
+
+# Plot a wordcloud using amzn_p_freq values
+
+wordcloud(names(amzn_p_freq),amzn_p_freq, max.words = 25 )
+```
+
+
+```{r}
+# Create amzn_c_tdm
+amzn_c_tdm <- TermDocumentMatrix(amzn_cons_corp
+,control = list(tokenize = tokenizer))
+
+# Create amzn_c_tdm_m
+
+amzn_c_tdm_m <- as.matrix(amzn_c_tdm)
+
+
+# Create amzn_c_freq
+amzn_c_freq <- rowSums(amzn_c_tdm_m )
+
+# Plot a wordcloud of negative Amazon bigrams
+wordcloud(names(amzn_c_freq), amzn_c_freq,max.words = 25)
+```
+
+```{r}
+# Create amzn_c_tdm
+amzn_c_tdm <- TermDocumentMatrix(amzn_cons_corp, control = list(tokenize = tokenizer))
+
+# Print amzn_c_tdm to the console
+amzn_c_tdm
+
+# Create amzn_c_tdm2 by removing sparse terms 
+amzn_c_tdm2 <- removeSparseTerms(amzn_c_tdm,.993)
+
+# Create hc as a cluster of distance values
+hc <-  hclust(dist(amzn_c_tdm2),method = "complete")
+
+# Produce a plot of hc
+plot(hc)
+
+```
+
+# Word association
+
+As expected, you see similar topics throughout the dendrogram. Switching back to positive comments, you decide to examine top phrases that appeared in the word clouds. You hope to find associated terms using the findAssocs()function from tm. You want to check for something surprising now that you have learned of long hours and a lack of work-life balance.
+
+```{r}
+
+# Construct a TDM called amzn_p_tdm from amzn_pros_corp and control = list(tokenize = tokenizer).
+# Create amzn_p_tdm
+
+amzn_p_tdm = TermDocumentMatrix(amzn_pros_corp,
+                                control = list(tokenize = tokenizer)
+)
+
+# Create amzn_p_m
+
+amzn_p_m = as.matrix(amzn_p_tdm)
+
+# Create amzn_p_freq
+amzn_p_freq =  rowSums(amzn_p_m)
+
+# Create term_frequency
+
+term_frequency = sort(amzn_p_freq,decreasing = TRUE)
+
+# Print the 5 most common terms
+
+term_frequency[1:5]
+
+# Find associations with fast paced
+
+findAssocs(amzn_p_tdm,"fast paced", 0.2)
+
+```
+
+# Quick review of Google reviews
+
+You decide to create a comparison.cloud() of Google's positive and negative reviews for comparison to Amazon. This will give you a quick understanding of top terms without having to spend as much time as you did examining the Amazon reviews in the previous exercises.
+
+We've provided you with a corpus all_goog_corpus, which has the 500 positive and 500 negative reviews for Google. Here, you'll clean the corpus and create a comparison cloud comparing the common words in both pro and con reviews.
+
+
+```{r}
+# Create all_goog_corp
+all_goog_corp <- tm_clean(all_goog_corpus)
+
+# Create all_tdm
+
+all_tdm <- TermDocumentMatrix(all_goog_corp)
+
+# Create all_m
+all_m <- as.matrix(all_tdm)
+
+# Build a comparison cloud
+comparison.cloud(all_m , 
+    max.words = 100, 
+    colors = c("#F44336", "#2196f3"))
+
+```
+
+```{r}
+# Filter to words in common and create an absolute diff column
+common_words <- all_tdm_df %>% 
+  filter(
+    AmazonPro != 0,
+    GooglePro != 0
+  ) %>%
+  mutate(diff = abs(AmazonPro - GooglePro))
+
+# Extract top 5 common bigrams
+( top5_df <- top_n(common_words,5, diff))
+
+# Create the pyramid plot
+pyramid.plot(top5_df$AmazonPro , top5_df$GooglePro, 
+             labels = top5_df$terms, gap = 12, 
+             top.labels = c("Amzn", "Pro Words", "Goog"), 
+             main = "Words in Common", unit = NULL)
+
+```
+
+Cage match, part 2! Negative reviews
+In both organizations, people mentioned "culture" and "smart people", so there are some similar positive aspects between the two companies. However with the pyramid plot you can start to infer degrees of positive features of the work environments.
+
+You now decide to turn your attention to negative reviews and make the same visual. This time you already have the common_words data frame in your workspace. However, the common bigrams in this exercise come form negative employee reviews.
+
+```{r}
+# Extract top 5 common bigrams
+(top5_df <- top_n(common_words, 5 , diff))
+
+# Create a pyramid plot
+pyramid.plot(
+    # Amazon on the left
+    top5_df$AmazonNeg,
+    # Google on the right
+    top5_df$GoogleNeg,
+    # Use terms for labels
+    labels = top5_df$terms,
+    # Set the gap to 12
+    gap = 12,
+    # Set top.labels to "Amzn", "Neg words" & "Goog"
+   top.labels = c("Amzn", "Neg Words", "Goog"),
+    main = "Words in Common", 
+    unit = NULL
+)
+```
+
+Draw another conclusion, insight, or recommendation
+Earlier you were surprised to see "fast paced" in the pros despite the other reviews mentioning "work-life balance". Recall that you used findAssocs() to get a named vector of phrases. These may lead you to a conclusion about the type of person who favorably views an intense workload.
+
+Given the abbreviated results of the associated phrases, what would you recommend Amazon HR recruiters look for in candidates? (You can use the snippet below to gain insight on phrases associated with "fast paced".)
+
+findAssocs(amzn_p_tdm, "fast paced", 0.2)[[1]][1:15]
+
+
+```{r}
+
+```
+
 ```{r}
 
 ```
@@ -651,7 +1133,6 @@ For now, let's simply create a new visual called a dendrogram from our coffee_tw
 
 ```
 
-
 ```{r}
 
 ```
@@ -665,23 +1146,6 @@ For now, let's simply create a new visual called a dendrogram from our coffee_tw
 ```{r}
 
 ```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
 
 ```{r}
 
@@ -707,17 +1171,50 @@ For now, let's simply create a new visual called a dendrogram from our coffee_tw
 ```
 
 
+```{r}
+
+```
 
 ```{r}
 
 ```
 
 
+```{r}
+
+```
+
 
 ```{r}
 
 ```
 
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
 
 ```{r}
 

@@ -1,0 +1,178 @@
+---
+title: "Test data science avec R"
+---
+
+```{r eval=FALSE, echo=FALSE}
+pacman::p_load(rgeos,rgdal,learnr,skimr,ggvis,googleVis,corrplot,
+               PerformanceAnalytics,rgdal,ggmap,rgeos,
+               revealjs,DT,leaflet,data.table,
+               leaflet.extras,caret,rpart,ggplot2,ipred,randomForest,
+               rpart.plot,class,e1071,neuralnet,nnet,devtools,
+               xgboost,AUC,hydroGOF,gbm,parallel,readr,RColorBrewer,gridExtra,
+               rpart,psych,rmarkdown, rpart.plot,corrplot,DT,
+               BBmisc,ParamHelpers,kernlab,ranger,irace,cmaes,
+               GenSA,XML,mlr,MASS,arules,
+               arulesViz,sjPlot,sjmisc,pROC,readxl,tidyverse,broom,staplr,Hmisc,
+               tabplot,GGally,insuranceData,dummies,fastDummies,glmnet,plotly,dplyr
+               ,DiagrammeR,Ckmeans.1d.dp,caret,lubridate, magrittr,knitr, ggpubr,countrycode,pROC,verification,countrycode,shinydashboard,shiny)
+```
+
+```{r echo=FALSE, eval=FALSE}
+
+
+#####  chemin relatif du dossier contenant les fichiers ######
+
+data.path="https://dataks.bitbucket.io/ml/"
+data.path="C:/Users/SHIK/Documents/GitHub/dataks.bitbucket.io/ml/"
+data.path="../../../DS/data/test/"
+
+######### choix fichier #############
+
+files=list.files(pattern = ".Rmd")
+files.excluded = c("house_price_prediction.Rmd","regression_mlr.Rmd")
+files = setdiff(files, files.excluded)
+
+######### type fichier #############
+
+type_document=c("html_document","html")
+type_document=c("revealjs::revealjs_presentation","revealjs")
+type_document=c("pdf_document","pdf")
+type_document=c("beamer_presentation","beamer")
+
+####### boucle de render  ############
+
+for (file in files){
+  render(file,"html_document",
+         output_file = paste0(substr(file,1,(nchar(file)-4)),".html"),
+         encoding="UTF-8",
+         output_dir = "html_site",
+         quiet = F,
+         output_options=list(self_contained=FALSE,
+                             lib_dir="html_site/site_libs", toc = TRUE,toc_float = TRUE, number_sections= TRUE))
+}
+
+```
+
+
+```{r}
+
+
+# Create an empty header
+header <- dashboardHeader()
+
+# Create an empty sidebar
+sidebar <- dashboardSidebar()
+
+# Create an empty body
+body <- dashboardBody()
+```
+
+```{r}
+header <- dashboardHeader()
+sidebar <- dashboardSidebar()
+body <- dashboardBody()
+
+# Create the UI using the header, sidebar, and body
+ui <- dashboardPage(header, sidebar, body)
+
+server <- function(input, output) {}
+
+shinyApp(ui, server)
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
