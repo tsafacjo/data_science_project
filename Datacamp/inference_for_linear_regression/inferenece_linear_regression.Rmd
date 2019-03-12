@@ -1,0 +1,104 @@
+---
+title: "inference for linear regression "
+---
+
+```{r eval=FALSE, echo=FALSE}
+pacman::p_load(rgeos,rgdal,learnr,skimr,ggvis,googleVis,corrplot,
+               PerformanceAnalytics,rgdal,ggmap,rgeos,
+               revealjs,DT,leaflet,data.table,
+               leaflet.extras,caret,rpart,ggplot2,ipred,randomForest,
+               rpart.plot,class,e1071,neuralnet,nnet,devtools,
+               xgboost,AUC,hydroGOF,gbm,parallel,readr,RColorBrewer,gridExtra,
+               rpart,psych,rmarkdown, rpart.plot,corrplot,DT,
+               BBmisc,ParamHelpers,kernlab,ranger,irace,cmaes,
+               GenSA,XML,mlr,MASS,arules,
+               arulesViz,sjPlot,sjmisc,pROC,readxl,tidyverse,broom,staplr,Hmisc,
+               tabplot,GGally,insuranceData,dummies,fastDummies,glmnet,plotly,dplyr
+               ,DiagrammeR,Ckmeans.1d.dp,caret,lubridate, magrittr,knitr, ggpubr,countrycode,pROC,verification,countrycode,shinydashboard,shiny)
+```
+
+```{r echo=FALSE, eval=FALSE}
+
+
+#####  chemin relatif du dossier contenant les fichiers ######
+
+data.path="https://dataks.bitbucket.io/ml/"
+data.path="C:/Users/SHIK/Documents/GitHub/dataks.bitbucket.io/ml/"
+data.path="../../../DS/data/test/"
+
+######### choix fichier #############
+
+files=list.files(pattern = ".Rmd")
+files.excluded = c("house_price_prediction.Rmd","regression_mlr.Rmd")
+files = setdiff(files, files.excluded)
+
+######### type fichier #############
+
+type_document=c("html_document","html")
+type_document=c("revealjs::revealjs_presentation","revealjs")
+type_document=c("pdf_document","pdf")
+type_document=c("beamer_presentation","beamer")
+
+####### boucle de render  ############
+
+for (file in files){
+  render(file,"html_document",
+         output_file = paste0(substr(file,1,(nchar(file)-4)),".html"),
+         encoding="UTF-8",
+         output_dir = "html_site",
+         quiet = F,
+         output_options=list(self_contained=FALSE,
+                             lib_dir="html_site/site_libs", toc = TRUE,toc_float = TRUE, number_sections= TRUE))
+}
+
+```
+
+# Regression output: example I
+
+The following code provides two equivalent methods for calculating the most important pieces of the linear model output. Recall that the p-value is the probability of the observed data (or more extreme) given the null hypothesis is true. As with inference in other settings, you will need the sampling distribution for the statistic (here the slope) assuming the null hypothesis is true. You will generate the null sampling distribution in later chapters, but for now, assume that the null sampling distribution is correct. Additionally, notice that the standard error of the slope and intercept estimates describe the variability of those estimates.
+```{r}
+
+# Load the mosaicData package and the RailTrail data
+library(mosaicData)
+data(RailTrail)
+
+# Fit a linear model
+ride_lm <- lm(volume~hightemp, data = RailTrail)
+
+# View the summary of your model
+summary(ride_lm)
+
+# Print the tidy model output
+tidy(ride_lm)
+
+```
+
+# First random sample, second random sample
+
+Now, you will dive in to understanding how linear models vary from sample to sample. Here two random samples from a population are plotted onto the scatterplot. The population data (called popdata) already exists and is pre-loaded, along with ggplot and dplyr.
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```

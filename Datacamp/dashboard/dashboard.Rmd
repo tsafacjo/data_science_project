@@ -81,70 +81,472 @@ shinyApp(ui, server)
 ```
 
 
+mise à jour automatique
+
+```{r}
+library(shiny)
+
+server <- function(input, output, session) {
+  reactive_starwars_data <- reactiveFileReader(
+        intervalMillis = 1000,
+        session = session,
+        filePath = starwars_url,
+        readFunc = function(filePath) { 
+           read.csv(url(filePath))
+         }
+         )
+    
+  output$table <-   renderTable({ reactive_starwars_data()})
+}
+
+body <- dashboardBody(
+  tableOutput("table")
+)
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = dashboardSidebar(),
+                    body = body
+                    )
+shinyApp(ui, server)
+```
+
+" Menu dynamique"
+```{r}
+
+server <- function(input, output) {
+  output$task_menu <- renderMenu({
+tasks <- apply(task_data, 1, function(row) { 
+  taskItem(text = row[["text"]],
+           value = row[["value"]])
+})
+dropdownMenu(type = "tasks", .list = tasks)
+  })
+}
+
+header <- dashboardHeader(dropdownMenuOutput("task_menu"))
+
+ui <- dashboardPage(header = header,
+                    sidebar = dashboardSidebar(),
+                    body = dashboardBody()
+                    )
+shinyApp(ui, server)
+
+```
+
+
+a buton  
+```{r}
+library("shiny")
+sidebar <- dashboardSidebar(
+  actionButton("click", "Update click box")
+) 
+
+server <- function(input, output) {
+  output$click_box <- renderValueBox({
+    valueBox(
+     value = 10,
+        subtitle = "Click Box"
+    )
+  })
+}
+
+body <- dashboardBody(
+      valueBoxOutput("click_box")
+ )
+
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = sidebar,
+                    body = body
+                    )
+shinyApp(ui, server)
+
+```
+
+
+counter 
+
+```{r}
+
+
+library("shiny")
+sidebar <- dashboardSidebar(
+  actionButton("click", "Update click box")
+) 
+
+server <- function(input, output) {
+  output$click_box <- renderValueBox({
+    valueBox(
+     value =input$click,
+        subtitle = "Click Box"
+    )
+  })
+}
+
+body <- dashboardBody(
+      valueBoxOutput("click_box")
+ )
+
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = sidebar,
+                    body = body
+                    )
+shinyApp(ui, server)
+
+```
+
+
+
+
+```{r}
+library("shiny")
+
+body <- dashboardBody(
+
+fluidRow(box(
+    width = 12,
+    title = "Regular Box, Row 1",
+    "Star Wars"
+    )),
+    
+    fluidRow(box(
+    width = 12,
+    title = "Regular Box, Row 2",
+    "Nothing but Star Wars"
+    ))
+
+# Row 1
+ 
+# Row 2
+
+)
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = dashboardSidebar(),
+                    body = body
+                    )
+shinyApp(ui, server)
+```
+
+
+Shiny 
+
+```{r}
+library("shiny")
+
+body <- dashboardBody(
+  fluidRow(
+# Column 1
+infoBox(
+    width = 6,
+    title = "Regular Box, Column 1",
+    subtitle = "Gimme those Star Wars"
+    ),
+# Column 2
+  infoBox(
+    width = 6,
+    title = "Regular Box, Column 2",
+    subtitle = "Don't let them end"
+    )
+  )
+)
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = dashboardSidebar(),
+                    body = body
+                    )
+shinyApp(ui, server)
+
+```
+
+Application avec deux colonnes 
+
+```{r}
+library("shiny")
+
+body <- dashboardBody(
+  fluidRow(
+# Column 1
+    column(width = 6,
+      infoBox(
+        width = NULL,
+        title = "Regular Box, Column 1",
+        subtitle = "Gimme those Star Wars"
+      )
+    ),
+# Column 2
+    column(width = 6,
+      infoBox(
+        width = NULL,
+        title = "Regular Box, Column 2",
+        subtitle = "Don't let them end"
+      )
+    )
+  )
+)
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = dashboardSidebar(),
+                    body = body
+                    )
+shinyApp(ui, server)
+
+```
+
+
+autre configuration
+
 ```{r}
 
 ```
 
 
+customise css in the main file 
+```{r}
+library("shiny")
+
+body <- dashboardBody(
+# Update the CSS
+ body <- dashboardBody(
+    tags$head(
+        tags$style(
+            HTML('
+            h3 {
+    font-weight: bold;
+}
+            ')
+        )
+    )
+),
+  fluidRow(
+    box(
+      width = 12,
+      title = "Regular Box, Row 1",
+      "Star Wars, nothing but Star Wars"
+    )
+  ),
+  fluidRow(
+    column(width = 6,
+      infoBox(
+        width = NULL,
+        title = "Regular Box, Row 2, Column 1",
+        subtitle = "Gimme those Star Wars"
+    )
+   ),
+    column(width = 6,
+      infoBox(
+        width = NULL,
+        title = "Regular Box, Row 2, Column 2",
+        subtitle = "Don't let them end"
+    )
+  )
+ )
+)
+
+ui <- dashboardPage(
+  skin = "purple",
+  header = dashboardHeader(),
+  sidebar = dashboardSidebar(),
+  body = body)
+shinyApp(ui, server)
+
+```
+
+add a simple icon 
+
+```{r}
+library("shiny") 
+
+header <- dashboardHeader(
+  dropdownMenu(
+    type = "notifications",
+    notificationItem(
+      text = "The International Space Station is overhead!",
+      icon = icon("coffee")
+    )
+  )
+)
+ui <- dashboardPage(header = header,
+                    sidebar = dashboardSidebar(),
+                    body = dashboardBody()
+                    )
+shinyApp(ui, server)
+
+
+```
+
+
+style 
+
+```{r}
+library("shiny")
+
+body <- dashboardBody(
+  tags$head(
+    tags$style(
+      HTML('
+      h3 {
+        font-weight: bold;
+      }
+      ')
+    )
+  ),
+  fluidRow(
+    box(
+      width = 12,
+      title = "Regular Box, Row 1",
+      "Star Wars, nothing but Star Wars",
+# Make the box red
+      status = "danger"
+    )
+  ),
+  fluidRow(
+    column(width = 6,
+      infoBox(
+        width = NULL,
+        title = "Regular Box, Row 2, Column 1",
+        subtitle = "Gimme those Star Wars",
+# Add a star icon
+        icon = icon("star")
+    )
+   ),
+    column(width = 6,
+      infoBox(
+        width = NULL,
+        title = "Regular Box, Row 2, Column 2",
+        subtitle = "Don't let them end",
+# Make the box yellow
+        color = "yellow"
+    )
+  )
+ )
+)
+
+ui <- dashboardPage(
+  skin = "purple",
+  header = dashboardHeader(),
+  sidebar = dashboardSidebar(),
+  body = body)
+shinyApp(ui, server)
+
+```
+
+# CASE STUDY 
+
+# Print the nasa_fireball data frame
+nasa_fireball
+
+# Examine the types of variables present
+sapply(nasa_fireball, class)
+
+# Observe the number of observations in this data frame
+nrow(nasa_fireball)
+
+# Check for missing data
+sapply(nasa_fireball, anyNA)
+
 ```{r}
 
 ```
 
+création d'un dashboard simple 
+
 ```{r}
+library("shiny")
+max_vel <- max(nasa_fireball$vel, na.rm = TRUE)
+
+body <- dashboardBody(
+  fluidRow(
+    # Add a value box for maximum velocity
+    valueBox(
+      value = max_vel,
+      subtitle = "Maximum pre-impact velocity", 
+      icon = icon("fire")
+    )
+  )
+)
+
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = dashboardSidebar(),
+                    body = body
+                    )
+shinyApp(ui, server)
 
 ```
 
 
+
+Dynamics color example 
+
 ```{r}
+n_us <- sum(
+  ifelse(
+    nasa_fireball$lat < 64.9 & nasa_fireball$lat > 19.5
+      & nasa_fireball$lon < -68.0 & nasa_fireball$lon > -161.8,
+    1, 0),
+  na.rm = TRUE)
+  
+server <- function(input, output) {
+  output$us_box <- renderValueBox({
+    valueBox(
+      value = n_us,
+      subtitle = "Number of Fireballs in the US",
+      icon = icon("globe"),
+      color = if (n_us < 10) {
+                "blue"
+              } else {
+              "fuchsia"
+              }
+    )
+  })
+}
+
+body <- dashboardBody(
+  fluidRow(
+    valueBoxOutput("us_box")
+  )
+)
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = dashboardSidebar(),
+                    body = body
+                    )
+shinyApp(ui, server)
 
 ```
 
+#  add a filter 
 
-```{r}
+sidebar <- dashboardSidebar(
+  sliderInput(
+    inputId = "threshold",
+    label = "Color Threshold",
+    min = 0,
+    max = 100,
+    value = 10)
+)
 
-```
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-
-```{r}
-
-```
+server <- function(input, output) {
+  output$us_box <- renderValueBox({
+    valueBox(
+      value = n_us,
+      subtitle = "Number of Fireballs in the US",
+      icon = icon("globe"),
+      color = if (n_us < input$threshold) {
+                "blue"
+              } else {
+              "fuchsia"
+              }
+    )
+  })
+}
 
 
-```{r}
-
-```
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
+ui <- dashboardPage(header = dashboardHeader(),
+                    sidebar = sidebar,
+                    body = body
+                    )
+shinyApp(ui, server)
 
 ```{r}
 
