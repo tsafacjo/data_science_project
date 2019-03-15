@@ -1,15 +1,24 @@
 ---
-title: "Bag of words"
+title: "Test data science avec R"
 ---
 
 ```{r eval=FALSE, echo=FALSE}
-pacman::p_load(PerformanceAnalytics,rgdal,ggmap,rgeos,
+pacman::p_load(rgeos,rgdal,learnr,skimr,ggvis,googleVis,corrplot,
+               PerformanceAnalytics,rgdal,ggmap,rgeos,
                revealjs,DT,leaflet,data.table,
-               leaflet.extras,caret,rpart,ggplot2,ipred,class,rmarkdown,
-               BBmisc,ParamHelpers,kernlab,tm, wordcloud,viridisLite,plotrix,dendextend,dplyr, qdapTools)
+               leaflet.extras,caret,rpart,ggplot2,ipred,randomForest,
+               rpart.plot,class,e1071,neuralnet,nnet,devtools,
+               xgboost,AUC,hydroGOF,gbm,parallel,readr,RColorBrewer,gridExtra,
+               rpart,psych,rmarkdown, rpart.plot,corrplot,DT,
+               BBmisc,ParamHelpers,kernlab,ranger,irace,cmaes,
+               GenSA,XML,mlr,MASS,arules,
+               arulesViz,sjPlot,sjmisc,pROC,readxl,tidyverse,broom,staplr,Hmisc,
+               tabplot,GGally,insuranceData,dummies,fastDummies,glmnet,plotly,dplyr
+               ,DiagrammeR,Ckmeans.1d.dp,caret,lubridate, magrittr,knitr, ggpubr,countrycode,pROC,verification,countrycode)
 ```
 
 ```{r echo=FALSE, eval=FALSE}
+
 
 #####  chemin relatif du dossier contenant les fichiers ######
 
@@ -19,7 +28,9 @@ data.path="../../../DS/data/test/"
 
 ######### choix fichier #############
 
-files= c ("text_mining_bag_of_words.Rmd")
+files=list.files(pattern = ".Rmd")
+files.excluded = c("house_price_prediction.Rmd","regression_mlr.Rmd")
+files = setdiff(files, files.excluded)
 
 ######### type fichier #############
 
@@ -40,26 +51,11 @@ for (file in files){
                              lib_dir="html_site/site_libs", toc = TRUE,toc_float = TRUE, number_sections= TRUE))
 }
 
-
 ```
-
-# Workflow
-
-The main steps in a text mining project are :
-
-- Problem definition
-- unorganized state
-- Organisation
-- Feature Extraction
-- Analysis
-- Organized state
-
-
-# Excercice elementaires
 
 Compter la fréquence des mots 
 
-```{r eval= FALSE}
+```{r}
 # Load qdap
 
 library(qdap)
@@ -79,31 +75,25 @@ plot(term_count)
 
 Text mining begins with loading some text data into R, which we'll do with the read.csv() function. By default, read.csv() treats character strings as factor levels like Male/Female. To prevent this from happening, it's very important to use the argument stringsAsFactors = FALSE.
 
-# Import data
-
-Nous allons travaillé ici avec le dataset `tweets.
-
-
 
 ```{r}
 # Import text data
 
-coffee_tweets.raw = read.csv('https://assets.datacamp.com/production/course_935/datasets/coffee.csv', stringsAsFactors = F)
+tweets = read.csv(coffee_data_file, stringsAsFactors = FALSE )
 # View the structure of tweets
-str(coffee_tweets.raw)
+
+str(tweets)
+
 # Isolate text from tweets: coffee_tweets
-coffee_tweets =  coffee_tweets.raw$text
-# Import chardonnay tweet data
-chardonnay_tweets <- read.csv('https://assets.datacamp.com/production/course_935/datasets/chardonnay.csv', stringsAsFactors = F)
 
-head(chardonnay_tweets$text)
-
-
+coffee_tweets =  tweets$text
 ```
 
 create a volatile corpus (vcorpus that is held in the ram ) to be more efficient on the processing 
 ```{r}
 # Load tm
+
+library(tm)
 # Make a vector source: coffee_source
  coffee_source <- VectorSource(coffee_tweets)
 ```
@@ -130,7 +120,6 @@ coffee_corpus[[15]][1]
 # Now use content to review plain text
 content(coffee_corpus[[10]])
 ```
-
 Make a VCorpus from a data frame
 If your text data is in a data frame you can use DataframeSource() for your analysis. The data frame passed to DataframeSource() must have a specific structure:
 
@@ -139,7 +128,7 @@ Column two must be called text with "UTF-8" encoding (pretty standard).
 Any other columns, 3+ are considered metadata and will be retained as such.
 
 
-```{r eval = FALSE }
+```{r}
 
 #Create df_source using DataframeSource() with the example_text.
 # Create a DataframeSource: df_source
@@ -179,11 +168,15 @@ Il s'agit ici des étapes préliminaires
 Après ces étapes élémentaires vient les stem qui consiste à remplacer les mots par leurs racines (celle du mot dont ils dérivent)
 
 
+```{r}
+
+```
+
 Après le steming on se retrouve facilement avec des mots qui n'ont pas de sens c'est pourquoi on ajoute une étape 
 pour completer les token par les éléments ayant du sens 
 
 
-```{r  eval = FALSE}
+```{r}
 # Create the object: text
 text <- "<b>She</b> woke up at       6 A.M. It\'s so early!  She was only 10% awake and began drinking coffee in front of her computer."
 
@@ -200,10 +193,8 @@ removeNumbers(text)
 # Remove whitespace
 stripWhitespace(text)
 ```
-
-qdab preprocessing function
-
-```{r eval = FALSE }
+qdab preprocessing function 
+```{r}
 ## text is still loaded in your workspace
 
 # Remove text within brackets
@@ -223,10 +214,9 @@ replace_contraction(text)
 replace_symbol(text)
 
 ```
-
 ## Stopword
 
-```{r eval = FALSE}
+```{r}
 
 ## text is preloaded into your workspace
 
@@ -242,10 +232,9 @@ new_stops <- c("coffee", "bean", stopwords('en'))
 
 removeWords(text, new_stops)
 ```
-
 # Stemming  
 
-```{r eval = FALSE}
+```{r}
 # Create complicate
 
 complicate <- c('complicated', 'complication', 'complicatedly')
@@ -265,7 +254,7 @@ complete_text
 
 # Word stemming and stem completion on a sentence
 
-```{r eval = FALSE}
+```{r}
 comp_dict =c () #  est  la liste qui contient les mots à conserver 
 # Remove punctuation: rm_punc
 rm_punc <- removePunctuation(text_data)
@@ -286,7 +275,21 @@ complete_doc <- stemCompletion(stem_doc, comp_dict)
 complete_doc
 ```
 
-# Clean corpus function
+
+# Clean corpus function 
+```{r}
+ clean_corpus <- function(corpus) {
+    # Remove punctuation
+    corpus <- tm_map(corpus, removePunctuation)
+    # Transform to lower case
+    corpus <- tm_map(corpus, content_transformer(tolower))
+    # Add more stopwords
+    corpus <- tm_map(corpus, removeWords, c(stopwords("en"), "coffee","mug"))
+    # Strip whitespace
+    corpus <- tm_map(corpus, stripWhitespace)
+    return(corpus)
+  }
+```
 
 ```{r}
 # Alter the function code to match the instructions
@@ -301,7 +304,7 @@ clean_corpus <- function(corpus){
 # Create clean_corp by applying clean_corpus() to the included corpus tweet_corp
 # Apply your customized function to the tweet_corp: clean_corp
 
-clean_corp<-  clean_corpus(coffee_corpus)
+clean_corp<-  clean_corpus(tweet_corp)
 
 #Print the cleaned 227th tweet in clean_corp using indexing [[227]][1]
 
@@ -309,8 +312,7 @@ clean_corp<-  clean_corpus(coffee_corpus)
 clean_corp[[227]][1]
 
 # Print out the same tweet in original form
-coffee_tweets.raw$text[227]
-
+tweets$text[227]
 ```
 # Make a document-term matrix
 
@@ -356,17 +358,55 @@ coffee_m[2593:2594, 475:478]
 #  Frequent terms with tm
 
 ```{r}
+## coffee_tdm is still loaded in your workspace
+
+# Create a matrix: coffee_m
+
+coffee_m <- as.matrix(coffee_tdm)
+# Calculate the rowSums: term_frequency
 
 term_frequency <- rowSums(coffee_m)
 # Sort term_frequency in descending order
 term_frequency = sort(term_frequency, decreasing = TRUE )
+
 # View the top 10 most common words
 term_frequency[1:10]
+
 #Make a barplot of the top 10 terms with col = "tan" and las = 2 (for vertical x-axis labels).
+
 # Plot a barchart of the 10 most common words
 barplot(term_frequency[1:10], col = "tan" ,las = 2)
+
 ```
 Other method 
+
+```{r}
+# Create frequency
+frequency <- freq_terms(
+  tweets$text, 
+  top = 10, 
+  at.least = 3, 
+  stopwords = "Top200Words"
+)
+
+# Make a frequency barchart
+plot(frequency)
+```
+
+
+```{r}
+# Create frequency
+
+
+frequency <- freq_terms(tweets$text,top = 10, 
+  at.least = 3, 
+  stopwords = stopwords("english") )
+
+# Make a frequency barchart
+
+plot(frequency)
+
+```
 
 words clouds
 
@@ -375,6 +415,7 @@ words clouds
 
 # Load wordcloud package
 
+library(wordcloud)
 # Print the first 10 entries in term_frequency
 term_frequency[1:10]
 
@@ -390,68 +431,51 @@ terms_vec = names(term_frequency)
 
 # Stop words and word clouds
 
-create a volatile corpus (vcorpus that is held in the ram ) to be more efficient on the processing 
-
-```{r}
-# Load tm
-# Make a vector source: coffee_source
- chardonnay_source <- VectorSource(chardonnay_tweets$text)
-```
-
-
 ```{r}
 # Review a "cleaned" tweet
-chardonnay_corp = VCorpus(chardonnay_source )
 content(chardonnay_corp[[24]])
+
 # Add to stopwords
 stops <- c(stopwords(kind = 'en'), "chardonnay")
+
 # Review last 6 stopwords 
 tail(stops)
+
 # Apply to a corpus
 cleaned_chardonnay_corp <- tm_map(chardonnay_corp, removeWords, stops)
+
 # Review a "cleaned" tweet again
 content(cleaned_chardonnay_corp[[24]])
 ```
 
 
 ```{r}
-#Create coffee_tdm by applying TermDocumentMatrix() to clean_corp.
-# Create a TDM from clean_corp: coffee_tdm
-chardonnay_tdm <- TermDocumentMatrix(cleaned_chardonnay_corp)
-# Print coffee_tdm data
-chardonnay_tdm
-# Convert coffee_tdm to a matrix: coffee_m
-chardonnay_m <- as.matrix(chardonnay_tdm)
-# Print the dimensions of the matrix
-dim(chardonnay_m)
-# Review a portion of the matrix
-chardonnay_m[2593:2594, 475:478]
+# Sort the chardonnay_words in descending order
 
-```
+sorted_chardonnay_words = sort(chardonnay_words, decreasing = TRUE)
+# Print the 6 most frequent chardonnay terms
+sorted_chardonnay_words[1:10]
 
-```{r}
-
-chardonnay_words <- rowSums(chardonnay_m )
-# Sort term_frequency in descending order
-chardonnay_words = sort(chardonnay_words, decreasing = TRUE )
-# View the top 10 most common words
-chardonnay_words[1:10]
 # Get a terms vector
 terms_vec<- names(chardonnay_words)
+
 # Create a wordcloud for the values in word_freqs
-wordcloud(terms_vec, chardonnay_words , 
+wordcloud(chardonnay_words, chardonnay_words, 
           max.words = 50, colors = "red")
 ```
 Improve word cloud colors
 
 ```{r}
+
 # Print the list of colors
 colors()
-# Print the wordcloud with the specified colors
-terms <- names(chardonnay_words)
 
-wordcloud(terms, 
-          chardonnay_words, 
+# Print the wordcloud with the specified colors
+
+terms <- names(chardonnay_freqs)
+
+wordcloud(chardonnay_freqs$term, 
+          chardonnay_freqs$num, 
           max.words = 100, 
           colors = c("grey80","darkgoldenrod1", "tomato"))
 ```
@@ -459,10 +483,14 @@ wordcloud(terms,
 
 ```{r}
 # Select 5 colors 
+
 color_pal <- cividis(n = 5 )
+
 # Examine the palette output
+
+
 # Create a wordcloud with the selected palette
-wordcloud(terms_vec,chardonnay_words, max.words = 100, colors = color_pal)
+wordcloud(chardonnay_freqs$term, chardonnay_freqs$num, max.words = 100, colors = color_pal)
 ```
 
 # Find common words
@@ -472,7 +500,7 @@ wordcloud(terms_vec,chardonnay_words, max.words = 100, colors = color_pal)
 # Create all_coffee by using paste() with collapse = " " on coffee_tweets$text.
 # Create all_coffee
 
-all_coffee = paste(coffee_tweets.raw$text, collapse =" ")
+all_coffee = paste(coffee_tweets$text, collapse =" ")
 # Create all_chardonnay by using paste() with collapse = " " on chardonnay_tweets$text.
 # Create all_chardonnay
 
@@ -514,7 +542,6 @@ commonality.cloud(all_m, max.words = 100, colors = "springgreen")
 ```
 
 # Visualize dissimilar words
-
 Say you want to visualize the words not in common. To do this, you can also use comparison.cloud() and the steps are quite similar with one main difference.
 
 Like when you were searching for words in common, you start by unifying the tweets into distinct corpora and combining them into their own VCorpus() object. Next apply a clean_corpus() function and organize it into a TermDocumentMatrix.
@@ -526,6 +553,8 @@ To keep track of what words belong to coffee versus chardonnay, you can set the 
 # Create all_clean by applying the predefined clean_corpus function to all_corpus 
 # Clean the corpus
 all_clean <- clean_corpus(all_corpus)
+
+
 # reate all_tdm, a TermDocumentMatrix, from all_clean.
 # Create all_tdm
 all_tdm <- TermDocumentMatrix(all_clean)
@@ -549,7 +578,7 @@ The counts of those words from document 2.
 Then pyramid.plot() using
 
 ```{r}
-all_tdm_m <- all_m
+
 top25_df <- all_tdm_m %>%
   # Convert to data frame
   as_data_frame(rownames = "word") %>% 
@@ -587,8 +616,7 @@ In a network graph, the circles are called nodes and represent individual terms,
 For the over-caffeinated text miner, qdap provides a shorcut for making word networks. The word_network_plot() and word_associate() functions both make word networks easy!
 
 The sample code constructs a word network for words associated with "Marvin".
-
-```{r eval= FALSE }
+```{r}
 # Word association
 word_associate(coffee_tweets$text, match.string = "barista" ,
                stopwords = c(Top200Words, "coffee", "amp"), 
@@ -613,7 +641,7 @@ For now, let's simply create a new visual called a dendrogram from our coffee_tw
 
 ```{r}
 # Print the dimensions of tweets_tdm
-tweets_tdm  =  TermDocumentMatrix(coffee_corpus)
+
 dim(tweets_tdm)
 # Create tdm1
 tdm1  <- removeSparseTerms(tweets_tdm,sparse = 0.95)
@@ -638,7 +666,7 @@ tdm_m <- as.matrix(tweets_tdm2)
 
 # Create tweets_dist
 
-tweets_dist <- dist(tdm_m)
+tweets_dist <- dist(tweets_tdm2)
 # Create hc
 hc =hclust(tweets_dist)
 
@@ -687,12 +715,12 @@ associations_df <- list_vect2df(associations, col2=  "word" , col3 = "score")
 
 # Plot the associations_df values
 ggplot(associations_df, aes(score, word)) + 
-  geom_point(size = 3) 
+  geom_point(size = 3) + 
+  theme_gdocs()
 
 ```
 
 # Changing n-grams
-
 So far, we have only made TDMs and DTMs using single words. The default is to make them with unigrams, but you can also focus on tokens containing two or more words. This can help extract useful phrases which lead to some additional insights or provide improved predictive attributes for a machine learning algorithm.
 
 The function below uses the RWeka package to create trigram (three word) tokens: min and max are both set to 3.
@@ -707,18 +735,18 @@ tdm <- TermDocumentMatrix(
   control = list(tokenize = tokenizer)
 )
 
-```{r eval = FALSE}
+```{r}
 # Make tokenizer function 
 tokenizer <- function(x) {
   NGramTokenizer(x, Weka_control(min = 2, max = 2))
 }
 
 # Create unigram_dtm
-unigram_dtm <- DocumentTermMatrix(coffee_corpus)
+unigram_dtm <- DocumentTermMatrix(text_corp)
 
 # Create bigram_dtm
 bigram_dtm <- DocumentTermMatrix(
-  coffee_corpus, 
+  text_corp, 
   control = list(tokenize = tokenizer)
 )
 
@@ -738,7 +766,7 @@ Remember how "Marvin" and "Gaye" were separate terms in the chardonnay word clou
 This exercise uses str_subset from stringr. Keep in mind, other DataCamp courses cover regular expressions in more detail. As a reminder, the regular expression ^ matches the starting position within the exercise's bigrams.
 
 
-```{r eval = FALSE }
+```{r}
 # Create bigram_dtm_m
 
 bigram_dtm_m <- as.matrix(bigram_dtm)
@@ -755,7 +783,7 @@ wordcloud(bi_words,freq,max.words = 15)
 
 ```{r}
 # Create a TDM
-tdm <- TermDocumentMatrix(coffee_corpus)
+tdm <- TermDocumentMatrix(text_corp)
 
 # Convert it to a matrix
 tdm_m <- as.matrix(tdm)
@@ -769,9 +797,11 @@ tdm_m[c("coffee", "espresso", "latte"), 161:166 ]
 
 ```{r}
 # Create a TDM
-tdm <- TermDocumentMatrix(coffee_corpus, control = list(weighting = weightTfIdf))
+tdm <- TermDocumentMatrix(text_corp, control = list(weighting = weightTfIdf))
+
 # Convert it to a matrix
 tdm_m <- as.matrix(tdm)
+
 # Examine part of the matrix
 tdm_m[c("coffee", "espresso", "latte"), 161:166 ] 
 
@@ -779,13 +809,14 @@ tdm_m[c("coffee", "espresso", "latte"), 161:166 ]
 
 # Capturing metadata in tm
 
+
 ```{r}
 # Rename the first column of tweets to "doc_id".
 # Rename columns
-names(coffee_tweets.raw )[1] <- "doc_id"
+names(tweets)[1] <- "doc_id"
 
 # Set the schema: docs
-docs <- DataframeSource(coffee_tweets.raw  )
+docs <- DataframeSource(tweets)
 
 # Make a clean volatile corpus: text_corpus
 text_corpus <- clean_corpus(VCorpus(docs))
@@ -797,3 +828,394 @@ content(text_corpus[[1]])
 meta(text_corpus[1])
 ```
 
+
+# WORFLOW 
+
+The main steps in a text mining project are :
+
+- Problem definition
+- unorganized state
+- Organisation
+- Feature Extraction
+- Analysis
+- Organized state
+
+
+# case study 
+Exercise
+Exercise
+Step 2: Identifying the text sources
+Employee reviews can come from various sources. If your human resources department had the resources, you could have a third party administer focus groups to interview employees both internally and from your competitor.
+
+Forbes and others publish articles about the "best places to work", which may mention Amazon and Google. Another source of information might be anonymous online reviews from websites like Indeed, Glassdoor or CareerBliss.
+
+Here, we'll focus on a collection of anonymous online revie
+
+```{r}
+# View the structure of amzn with str() to get its dimensions and a preview of the data
+# Print the structure of amzn
+str(amzn)
+#reate amzn_cons from the negative reviews column amzn$cons
+# Create amzn_pros
+amzn_pros <- amzn$pros
+# Create amzn_cons
+amzn_cons <- amzn$cons
+
+# Print the structure of goog
+str(goog)
+# Create goog_pros
+goog_pros <- goog$pros
+# Create goog_cons
+goog_cons <- goog$cons
+```
+
+# cleaning 
+
+```{r}
+# qdap_clean the text
+
+qdap_cleaned_amzn_pros <- qdap_clean(amzn_pros)
+# Source and create the corpus
+amzn_p_corp <- VCorpus(VectorSource(qdap_cleaned_amzn_pros))
+
+# tm_clean the corpus
+amzn_pros_corp <- tm_clean(amzn_p_corp)
+
+
+```
+
+
+```{r}
+# qdap_clean the text
+
+qdap_cleaned_amzn_cons = qdap_clean(amzn_cons)
+
+# Source and create the corpus
+amzn_c_corp = VCorpus(VectorSource(qdap_cleaned_amzn_cons))
+
+# tm_clean the corpus
+amzn_cons_corp = tm_clean(amzn_c_corp)
+
+```
+
+```{r}
+
+# qdap_clean the text
+qdap_cleaned_goog_pros <- qdap_clean(goog_pros)
+
+# Source and create the corpus
+goog_p_corp <- VCorpus(VectorSource(qdap_cleaned_goog_pros))
+
+# tm_clean the corpus
+goog_pros_corp <-  tm_clean(goog_p_corp)
+
+```
+
+
+```{r}
+# qdap_clean the text
+qdap_cleaned_goog_pros <- qdap_clean(goog_pros)
+
+# Source and create the corpus
+goog_p_corp <- VCorpus(VectorSource(qdap_cleaned_goog_pros))
+
+# tm_clean the corpus
+goog_pros_corp <-  tm_clean(goog_p_corp)
+
+
+# qdap_clean the text
+qdap_cleaned_goog_cons <- qdap_clean(goog_cons)
+
+# Source and create the corpus
+goog_c_corp <- VCorpus(VectorSource(qdap_cleaned_goog_cons ))
+
+# tm_clean the corpus
+goog_cons_corp <-  tm_clean(goog_c_corp)
+
+```
+
+Feature extraction & analysis: amzn_pros
+amzn_pros_corp, amzn_cons_corp, goog_pros_corp and goog_cons_corp have all been preprocessed, so now you can extract the features you want to examine. Since you are using the bag of words approach, you decide to create a bigram TermDocumentMatrix for Amazon's positive reviews corpus, amzn_pros_corp. From this, you can quickly create a wordcloud() to understand what phrases people positively associate with working at Amazon.
+
+The function below uses RWeka to tokenize two terms and is used behind the scenes in this exercise.
+
+tokenizer <- function(x) {
+  NGramTokenizer(x, Weka_control(min = 2, max = 2))
+}
+
+
+```{r}
+
+# Create amzn_p_tdm as a TermDocumentMatrix from amzn_pros_corp. Make sure to add control = list(tokenize = tokenizer) so that the terms are bigrams.
+# Create amzn_p_tdm
+tokenizer <- function(x) {
+  NGramTokenizer(x, Weka_control(min = 2, max = 2))
+}
+amzn_p_tdm <- TermDocumentMatrix(amzn_pros_corp, control = list(tokenize = tokenizer))
+
+# Create amzn_p_tdm_m
+amzn_p_tdm_m <- as.matrix(amzn_p_tdm)
+
+# Create amzn_p_freq to obtain the term frequencies from amzn_p_tdm_m.
+amzn_p_freq <- rowSums(amzn_p_tdm_m)
+# Create amzn_p_freq
+
+
+# Plot a wordcloud using amzn_p_freq values
+
+wordcloud(names(amzn_p_freq),amzn_p_freq, max.words = 25 )
+```
+
+
+```{r}
+# Create amzn_c_tdm
+amzn_c_tdm <- TermDocumentMatrix(amzn_cons_corp
+,control = list(tokenize = tokenizer))
+
+# Create amzn_c_tdm_m
+
+amzn_c_tdm_m <- as.matrix(amzn_c_tdm)
+
+
+# Create amzn_c_freq
+amzn_c_freq <- rowSums(amzn_c_tdm_m )
+
+# Plot a wordcloud of negative Amazon bigrams
+wordcloud(names(amzn_c_freq), amzn_c_freq,max.words = 25)
+```
+
+```{r}
+# Create amzn_c_tdm
+amzn_c_tdm <- TermDocumentMatrix(amzn_cons_corp, control = list(tokenize = tokenizer))
+
+# Print amzn_c_tdm to the console
+amzn_c_tdm
+
+# Create amzn_c_tdm2 by removing sparse terms 
+amzn_c_tdm2 <- removeSparseTerms(amzn_c_tdm,.993)
+
+# Create hc as a cluster of distance values
+hc <-  hclust(dist(amzn_c_tdm2),method = "complete")
+
+# Produce a plot of hc
+plot(hc)
+
+```
+
+# Word association
+
+As expected, you see similar topics throughout the dendrogram. Switching back to positive comments, you decide to examine top phrases that appeared in the word clouds. You hope to find associated terms using the findAssocs()function from tm. You want to check for something surprising now that you have learned of long hours and a lack of work-life balance.
+
+```{r}
+
+# Construct a TDM called amzn_p_tdm from amzn_pros_corp and control = list(tokenize = tokenizer).
+# Create amzn_p_tdm
+
+amzn_p_tdm = TermDocumentMatrix(amzn_pros_corp,
+                                control = list(tokenize = tokenizer)
+)
+
+# Create amzn_p_m
+
+amzn_p_m = as.matrix(amzn_p_tdm)
+
+# Create amzn_p_freq
+amzn_p_freq =  rowSums(amzn_p_m)
+
+# Create term_frequency
+
+term_frequency = sort(amzn_p_freq,decreasing = TRUE)
+
+# Print the 5 most common terms
+
+term_frequency[1:5]
+
+# Find associations with fast paced
+
+findAssocs(amzn_p_tdm,"fast paced", 0.2)
+
+```
+
+# Quick review of Google reviews
+
+You decide to create a comparison.cloud() of Google's positive and negative reviews for comparison to Amazon. This will give you a quick understanding of top terms without having to spend as much time as you did examining the Amazon reviews in the previous exercises.
+
+We've provided you with a corpus all_goog_corpus, which has the 500 positive and 500 negative reviews for Google. Here, you'll clean the corpus and create a comparison cloud comparing the common words in both pro and con reviews.
+
+
+```{r}
+# Create all_goog_corp
+all_goog_corp <- tm_clean(all_goog_corpus)
+
+# Create all_tdm
+
+all_tdm <- TermDocumentMatrix(all_goog_corp)
+
+# Create all_m
+all_m <- as.matrix(all_tdm)
+
+# Build a comparison cloud
+comparison.cloud(all_m , 
+    max.words = 100, 
+    colors = c("#F44336", "#2196f3"))
+
+```
+
+```{r}
+# Filter to words in common and create an absolute diff column
+common_words <- all_tdm_df %>% 
+  filter(
+    AmazonPro != 0,
+    GooglePro != 0
+  ) %>%
+  mutate(diff = abs(AmazonPro - GooglePro))
+
+# Extract top 5 common bigrams
+( top5_df <- top_n(common_words,5, diff))
+
+# Create the pyramid plot
+pyramid.plot(top5_df$AmazonPro , top5_df$GooglePro, 
+             labels = top5_df$terms, gap = 12, 
+             top.labels = c("Amzn", "Pro Words", "Goog"), 
+             main = "Words in Common", unit = NULL)
+
+```
+
+Cage match, part 2! Negative reviews
+In both organizations, people mentioned "culture" and "smart people", so there are some similar positive aspects between the two companies. However with the pyramid plot you can start to infer degrees of positive features of the work environments.
+
+You now decide to turn your attention to negative reviews and make the same visual. This time you already have the common_words data frame in your workspace. However, the common bigrams in this exercise come form negative employee reviews.
+
+```{r}
+# Extract top 5 common bigrams
+(top5_df <- top_n(common_words, 5 , diff))
+
+# Create a pyramid plot
+pyramid.plot(
+    # Amazon on the left
+    top5_df$AmazonNeg,
+    # Google on the right
+    top5_df$GoogleNeg,
+    # Use terms for labels
+    labels = top5_df$terms,
+    # Set the gap to 12
+    gap = 12,
+    # Set top.labels to "Amzn", "Neg words" & "Goog"
+   top.labels = c("Amzn", "Neg Words", "Goog"),
+    main = "Words in Common", 
+    unit = NULL
+)
+```
+
+Draw another conclusion, insight, or recommendation
+Earlier you were surprised to see "fast paced" in the pros despite the other reviews mentioning "work-life balance". Recall that you used findAssocs() to get a named vector of phrases. These may lead you to a conclusion about the type of person who favorably views an intense workload.
+
+Given the abbreviated results of the associated phrases, what would you recommend Amazon HR recruiters look for in candidates? (You can use the snippet below to gain insight on phrases associated with "fast paced".)
+
+findAssocs(amzn_p_tdm, "fast paced", 0.2)[[1]][1:15]
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+
+```

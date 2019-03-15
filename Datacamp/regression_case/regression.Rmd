@@ -1,0 +1,946 @@
+---
+title: "Regression"
+author: "Jordane TSAFACK"
+date: "1 novembre 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r}
+
+pacman::p_load('data.table')
+
+```
+
+
+# Visualizing the response variable
+
+"How does stream velocity influence the feeding behavior of dragonflies?"
+
+It is helpful if you have a general idea of the underlying structure of your response variable as you enter the modeling process. Now that you have identified feeding_events as the response variable, use a histogram to look at the observed values for this variable.
+
+A histogram will plot the frequency that each value of x can be found in the data.
+
+Note that the dragonflies data set and ggplot2 library have been preloaded.
+
+```{r}
+
+# Draw histogram
+ggplot(dragonflies) +
+	geom_histogram(aes(x = feeding_events))
+
+```
+
+
+
+```{r}
+# Draw scatterplot
+ggplot(dragonflies) +
+	geom_point(aes(x = stream_flow, y = feeding_events))
+
+
+```
+
+# Applying a GLM
+Your new research question is:
+
+"How does stream velocity influence the feeding behavior of dragonflies?"
+
+Your response variable is feeding_events and your predictor is stream_flow. You'll apply a generalized linear model (GLM) to describe this relationship. In this instance, you'll be using the simplest form of a GLM, with 'family = "gaussian"'. This is equivalent to a normal linear model.
+
+Note that the dragonflies data set has been preloaded.
+
+
+```{r}
+
+# Apply a GLM
+gaussian_glm <- glm(feeding_events ~ stream_flow, data = dragonflies, family = "gaussian")
+
+```
+
+# Generating and visualizing predicted values
+
+You have applied a Gaussian GLM to examine the relationship between feeding_events and stream_flow.
+
+Using your model output (gaussian_glm), you can make predictions about the number of feeding_events that will be seen at varying stream_flow. Start by building a data frame containing the values of stream_flow you want to use to make predictions. Next, generate predictions of feeding_events at these values. Finally, add a line to your scatterplot of stream_flow and feeding_events that represents the model predictions, and visually assess the model.
+
+Note that the dragonflies data set, gaussian_glm model, and ggplot2 library have been preloaded.
+
+```{r}
+# Set up a data frame for predictions
+pred_df <- data.frame(stream_flow = seq(from = 1, to = 5, length = 10))
+
+
+```
+
+# Generating and visualizing predicted values
+You have applied a Gaussian GLM to examine the relationship between feeding_events and stream_flow.
+
+Using your model output (gaussian_glm), you can make predictions about the number of feeding_events that will be seen at varying stream_flow. Start by building a data frame containing the values of stream_flow you want to use to make predictions. Next, generate predictions of feeding_events at these values. Finally, add a line to your scatterplot of stream_flow and feeding_events that represents the model predictions, and visually assess the model.
+
+Note that the dragonflies data set, gaussian_glm model, and ggplot2 library have been preloaded.
+
+```{r}
+
+# Set up a data frame for predictions
+pred_df <- data.frame(stream_flow = seq(from = 1, to = 5, length = 10))
+
+# Generate predictions
+pred_df$predicted <- predict(gaussian_glm, pred_df)
+
+# Look at the data frame
+pred_df
+
+# Add model line to plot
+ggplot(dragonflies) +
+	geom_point(aes(x = stream_flow, y = feeding_events)) +
+	geom_line(aes(x = stream_flow, y = predicted) , data = pred_df)
+
+```
+
+
+```{r}
+
+# Generate data frame of residuals and fitted values
+diag <- data.frame(residuals = resid(gaussian_glm),
+                   fitted = predict(gaussian_glm))
+
+# Visualize residuals vs fitted values
+ggplot(diag) +
+    geom_point(aes(x = fitted  , y =  residuals))
+
+```
+
+
+# Applying and visualizing a Poisson GLM
+Apply a Poisson GLM to describe the relationship between feeding_events and stream_flow. Because a Poisson GLM uses the link function 'log()', none of the predictions of 'feeding_events' will be less than zero, which is an improvement over your previous model.
+
+As you did with the previous model, you can use the model output to make predictions and visualize those results over a scatterplot of the raw data. This allows you to visually asses the model predictions.
+
+Note that the dragonflies data set and ggplot2 library have been preloaded.
+
+
+
+```{r}
+# Apply Poisson GLM
+poisson_glm <- glm(feeding_events ~ stream_flow, data = dragonflies, family = "poisson")
+
+# Set up a data frame for predictions
+pred_df <- data.frame(stream_flow = seq(from = 1, to = 5, length = 10))
+
+# Generate predictions
+pred_df$predicted <- predict(poisson_glm, pred_df, type = "response")
+
+# Add line reprsenting Poisson GLM
+ggplot(dragonflies) +
+   	geom_point(aes(x = stream_flow, y = feeding_events)) +
+	geom_line(aes(x = stream_flow, y = predicted), data = pred_df)
+
+
+```
+
+
+# Diagnosing the Poisson GLM
+You will apply two diagnostic tools to the Poisson GLM to determine if the model is appropriate for the data.
+
+First, visualize the residuals and fitted values to determine if the model provides comparably accurate predictions at various values of 'stream_flow'.
+
+Second, calculate dispersion. If dispersion is greater than 1, it means that there is more variability in the observed values than what would be expected by the model or error structure. This indicates that the model is not appropriate.
+
+Note that the dragonflies data set, poisson_glm model, custom dispersion() function, and ggplot2 library have been preloaded.
+
+
+```{r}
+# Generate data frame of residuals and fitted values
+diag <- data.frame(fitted = fitted(poisson_glm), residuals = resid(poisson_glm))
+
+# Visualize residuals vs fitted values
+ggplot(diag) +
+    geom_point(aes(x = fitted  , y =  residuals))
+
+# Calculate the dispersion of the model
+dispersion(poisson_glm, modeltype = "poisson")
+
+
+```
+
+# Applying and visualizing the model
+You will determine if your poisson_glm model might benefit by adding time as a factor. Adding time as a factor would result in different predictions of feeding_activity during the day than at night.
+
+As you did with the previous model, you can use the model output to make predictions and visualize those results over a scatterplot of the data. This allows you to visually asses the model predictions.
+
+Note that the dragonflies data set, poisson_glm model, custom function pr_fac(), and ggplot2 library have been preloaded.
+
+```{r}
+
+# Compare residuals across factor levels
+pr_fac(poisson_glm, dragonflies$time, xlabel = "time", modeltype = "poisson")
+
+# Add time as a factor, including an interaction
+poisson_glm_factor <- glm(feeding_events ~ stream_flow * time, data = dragonflies, family = "poisson")
+
+# Generate predicted values of feeding_events
+pred_df <- expand.grid(stream_flow = seq(from = 1, to = 5, length = 10),
+                       time = c("day", "night"))
+pred_df$predicted <- predict(poisson_glm_factor, pred_df, type = "response")
+
+# Visualize predicted values of feeding events
+ggplot(dragonflies) +
+	geom_point(aes(x = stream_flow, y = feeding_events)) +
+	geom_line(aes(x = stream_flow, y = predicted, col = time ), data = pred_df)
+
+```
+
+# Diagnosing the model
+Next, you'll apply model diagnostics to assess whether poisson_glm_factor is an appropriate model.
+
+Note that the dragonflies data set, poisson_glm_factor models, custom function dispersion(), and ggplot2 library have been preloaded.
+
+```{r}
+# Generate data frame of residuals and fitted values
+diag <- data.frame(residuals =resid(poisson_glm_factor), fitted  = fitted(poisson_glm_factor) )
+
+# Visualize residuals vs fitted values
+ggplot(diag) +
+	geom_point(aes( x = fitted, y = residuals))
+
+# Calculate the dispersion of the model
+dispersion(poisson_glm_factor, modeltype = "poisson")
+
+
+```
+
+# Adding an offset
+
+The area surveyed during each sampling event was not consistent. Therefore, you expect that instances where more area was surveyed may result in a bias in the number of observations of feeding events. To account for unequal sampling effort, you will apply an offset to the model, using the natural log of the recorded value of area.
+
+Note that the dragonflies data set has been preloaded.
+
+```{r}
+
+# Create a column containing the natural log of area
+dragonflies$logarea <- log (dragonflies$area)
+
+# Apply Poisson GLM with interaction and offset
+poisson_glm_offset <- glm(feeding_events ~ stream_flow * time + offset(logarea), data = dragonflies, family = "poisson")
+
+```
+
+# Applying a Negative Binomial GLM
+
+To address the continuing issue of overdispersion in the Poisson GLMs, try using a Negative Binomial GLM. This model wil contain an extra parameter that helps avoid overdispersion by accounting for differences between the variance and the mean.
+
+Note that the dragonflies data set and MASS package have been preloaded.
+
+```{r}
+# Apply Negative Binomial GLM
+neg_binom_glm <- glm.nb(feeding_events~ stream_flow*time+offset(logarea), data = dragonflies )
+
+
+```
+
+# Dropping terms from the model
+
+You have just applied a Negative Binomial GLM called neg_binom_glm that contains several terms that are used predict the number of feeding events:
+
+stream_flow
+time
+the interaction between stream_flow and time
+an offset to account for variable sampling effort (offset(logarea))
+Now, you'll determine if any terms can be dropped from the model using drop1() and apply the appropriate new model.
+
+Note that the dragonflies data set, neg_binom_glm model, and MASS package have been preloaded.
+
+```{r}
+
+# Use drop1 to determine which term(s) can be dropped
+drop1(neg_binom_glm, test = "Chisq")
+
+# Apply a new Negative Binomial GLM
+neg_binom_glm_small <- glm.nb(feeding_events~ stream_flow+time+offset(logarea), data = dragonflies )
+
+```
+
+# Model selection
+
+You have applied two Negative Binomial GLMs; one, neg_binom_glm, includes all of the terms, while the other, neg_binom_glm_small, excludes the interaction between stream_flow and time. Now it's time to decide which model to use to help answer the research question.
+
+Note that the dragonflies data set, neg_binom_glm and neg_binom_glm_small models, custom dispersion() function, and ggplot2 and MASS libraries have been preloaded.
+
+```{r}
+# Generate data frame of residuals and fitted values for neg_binom_glm
+diag <- data.frame(residuals = resid(neg_binom_glm), fitted = fitted(neg_binom_glm) )
+
+# Visualize residuals vs fitted values for neg_binom_glm
+
+ggplot(diag ) +
+geom_point(aes(x = fitted, y = residuals)) 
+# +geom_line(aes(x = stream_flow, y = predicted, col = season), data = pred_df)
+
+
+```
+
+
+```{r}
+
+# Generate data frame of residuals and fitted values for neg_binom_glm
+diag_small <- data.frame(residuals = resid(neg_binom_glm_small), fitted = fitted(neg_binom_glm_small) )
+
+# Visualize residuals vs fitted values for neg_binom_glm
+
+ggplot(diag_small) +
+geom_point(aes(x = fitted, y = residuals)) 
+# +geom_line(aes(x = stream_flow, y = predicted, col = season), data = pred_df)
+
+```
+
+
+```{r}
+# Compare AIC scores
+AIC(neg_binom_glm, neg_binom_glm_small)
+
+# View the selected model
+neg_binom_glm_small
+
+
+```
+
+# Visualizing the predicted values
+
+Now that you have selected neg_binom_glm_small as the best model option, it can be used to visualize the relationship between feeding_events and stream_flow during each time period. Remember that this will vary depending on the size of the area sampled.
+Note that the dragonflies data set, neg_binom_glm_small model, and ggplot2 library have been preloaded.
+
+```{r}
+
+pred_df <- expand.grid(stream_flow = seq(from = 1, to = 5, length = 10), time = c("day", "night"), logarea = log(6))
+
+# Generate predicted values
+pred_df$predicted <- predict(neg_binom_glm_small, pred_df, type = "response")
+
+# Visualize predicted values
+ggplot(dragonflies) +
+	geom_point(aes(x = stream_flow, y = feeding_events)) +
+	geom_line(aes(x = stream_flow, y = predicted, col = time), data = pred_df)
+
+```
+
+
+# Visualizing the standard errors
+Finally, you want to visualize the standard errors around the model predictions, which will represent the 95 % confidence interval around the estimate of the mean. These are useful for determining how well model can be used to help answer your research question.
+
+Note that the dragonflies data set, neg_binom_glm_small model, pred_df data frame, and MASS and ggplot2 libraries have been preloaded.
+
+
+```{r}
+# Extract fitted values
+raw_fit <- predict(neg_binom_glm_small, pred_df, type = "link")
+
+# Extract standard errors
+raw_se <- predict(neg_binom_glm_small, pred_df, type = "link", se = TRUE)$se
+
+# Generate predictions of upper and lower values
+pred_df$upper <- exp(raw_fit + 1.96 * raw_se)
+pred_df$lower <- exp(raw_fit - 1.96 * raw_se)
+
+# Visualize the standard errors around the predicted values
+ggplot(dragonflies) +
+	geom_point(aes(x = stream_flow, y = feeding_events)) +
+	geom_line(aes(x = stream_flow, y = predicted, col = time), data = pred_df) +
+	geom_line(aes(x = stream_flow, y = upper, col = time), linetype = "dashed", data = pred_df) + 
+	geom_line(aes(x = stream_flow, y = lower, col = time), linetype = "dashed", data = pred_df)
+
+```
+
+# Visualizing the raw data
+
+Using the orchids data set, your new research question is:
+
+"How does relative humidity influence the abundance of orchids?"
+
+The first thing to do is visualize the relationship between humidity and abundance. Because you are going to be thinking about site, also color your points based on each level of site.
+
+Recall that a scatterplot can be built using:
+
+ggplot(myData) +
+     geom_point(aes(x = var1, y = var2))
+Note that the orchids data set and ggplot2 library have been preloaded.
+
+
+```{r}
+# Create scatterplot of humidity and abundance
+ggplot(orchids) +
+     geom_point(aes(x = humidity , y =abundance,col = site))
+```
+
+
+
+# Including site as a fixed effect
+
+Using the orchids data set, your new research question is:
+"How does relative humidity influence the abundance of orchids?"
+You will start by using a Generalized Linear Model (GLM) to examine this relationship, with site included as a factor. In this instance, you'll be using the simplest form of a GLM, with family = "gaussian", which is equivalent to a normal linear model. Since you are only interested in how site influences the intercept, you will not include an interaction between humidity and site.
+Note that the orchids data set has been preloaded.
+```{r}
+
+# Apply GLM
+linear_glm <- glm(abundance ~ humidity + site, data = orchids, family = "gaussian")
+
+# Look at the output to see parameters for each site
+linear_glm$coefficients
+
+```
+
+
+```{r}
+
+# Apply random intercept model
+random_int_model <- lme(abundance ~ humidity, random = ~1 | site, data = orchids)
+
+# Look at model output
+random_int_model
+
+
+```
+
+
+
+```{r}
+# Fit linear model using Generalized Least Squares
+gls_model <- gls(abundance ~ humidity, data = orchids)
+
+# Apply a random intercept model
+random_int_model <- lme(abundance ~ humidity, random = ~1 | site, data = orchids, method = "REML")
+
+
+```
+
+
+
+```{r}
+
+
+# Fit linear model using Generalized Least Squares
+gls_model <- gls(abundance ~ humidity, data = orchids)
+
+# Apply a random intercept model
+random_int_model <- lme(abundance ~ humidity, random = ~1 | site, data = orchids, method = "REML")
+
+# Apply likelihood ratio test to compare models
+anova(gls_model, random_int_model)
+
+# Print the model that fits better
+random_int_model
+```
+
+
+
+
+```{r}
+# Calculate estimate of variance for the random intercept
+calculated_value <- 3.515514 ^ 2
+calculated_value
+
+# Extract estimate of variance for the random intercept
+extracted_value <- VarCorr(random_int_model)[1,1]
+extracted_value
+
+
+```
+
+Visualizing the fixed effects
+It's time to visualize your model predictions!
+
+Before you look at the random effect of site on the intercept, first visualize the fixed component of the mixed effect model, which is the overall linear relationship between abundance and humidity. Recall that this represents the population level model.
+
+As seen in Chapters 1 and 2, the first step is to build a data frame containing values of humidity you want to generate predictions from.
+
+Note that the orchids data set, nlme and ggplot2 libraries, and random_int_model model have been preloaded
+
+
+```{r}
+# Visualizing the fixed effects
+
+It s time to visualize your model predictions!
+
+Before you look at the random effect of site on the intercept, first visualize the fixed component of the mixed effect model, which is the overall linear relationship between abundance and humidity. Recall that this represents the population level model.
+
+As seen in Chapters 1 and 2, the first step is to build a data frame containing values of humidity you want to generate predictions from.
+
+Note that the orchids data set, nlme and ggplot2 libraries, and random_int_model model have been preloaded
+
+```
+
+
+
+```{r}
+
+
+# Create data frame for fixed component
+pred_df.fixed <- data.frame(humidity = seq(from = 40, to = 75, length = 10))
+
+# Generate population level predictions
+pred_df.fixed$predicted <- predict(random_int_model, pred_df.fixed, level = 0)
+```
+
+
+
+```{r}
+# Create data frame for fixed component
+pred_df.fixed <- data.frame(humidity = seq(from = 40, to = 75, length = 10))
+
+# Generate population level predictions
+pred_df.fixed$predicted <- predict(random_int_model, pred_df.fixed, level = 0)
+
+# Visualize predicted values
+ggplot(orchids) +
+	geom_point(aes(x = humidity, y = abundance, col = site)) +
+	geom_line(aes(x = humidity, y = predicted), size = 2, data = pred_df.fixed)
+
+
+```
+
+
+
+```{r}
+
+# Create data frame for random component
+pred_df.random <- expand.grid(humidity = seq(from = 40, to = 75, length = 10),
+                              site = unique(orchids$site))
+
+```
+
+
+```{r}
+# Create data frame for random component
+pred_df.random <- expand.grid(humidity = seq(from = 40, to = 75, length = 10),
+                              site = unique(orchids$site))
+
+# Generate within-site predictions
+pred_df.random$random <- predict(random_int_model, pred_df.random, level = 1)
+
+# Visualize predicted values
+ggplot(orchids) +
+	geom_point(aes(x = humidity, y = abundance, col = site)) +
+	geom_line(aes(x = humidity, y = predicted), size = 2, data = pred_df.fixed) +
+	geom_line(aes(x = humidity, y = random, col = site), data = pred_df.random)
+
+```
+
+
+#  Random intercept and slope model
+"How does relative humidity influence the abundance of orchids?"
+
+Since you are more interested in answering a question about the wider population of sites rather than the particular sites you have sampled, you will, once again, move from a GLM to a Mixed Effect Model. This time, you'll use a random intercept and slope model to examine how site effects the distributions of both the intercept and slope coefficients.
+
+Recall that a random intercept and slope model can be applied using:
+
+lme(y ~ x, random = ~1 + slopeVariable|randomEffect, data = myData)
+Note that the orchids data set and nlme library have been preloaded.
+
+
+```{r}
+
+# Apply random intercept and slope model
+random_int_slope_model <- lme(abundance ~ humidity, random = ~1 + humidity | site, data = orchids)
+
+# Look at model output
+random_int_slope_model
+
+```
+
+
+```{r}
+# Create data frame for fixed component
+pred_df.fixed <- data.frame(humidity = seq(from = 40, to = 75, length = 10))
+
+
+```
+
+
+```{r}
+# Create data frame for fixed component
+pred_df.fixed <- data.frame(humidity = seq(from = 40, to = 75, length = 10))
+
+# Generate population level predictions
+pred_df.fixed$predicted <- predict(random_int_slope_model, pred_df.fixed, level = 0)
+
+
+```
+
+
+```{r}
+
+# Create data frame for fixed component
+pred_df.fixed <- data.frame(humidity = seq(from = 40, to = 75, length = 10))
+
+# Generate population level predictions
+pred_df.fixed$predicted <- predict(random_int_slope_model, pred_df.fixed, level = 0)
+
+# Create data frame for random component
+pred_df.random <- expand.grid(humidity = seq(from = 40, to = 75, length = 10), site = unique(orchids$site))
+
+# Generate within-site predictions
+pred_df.random$random <- predict(random_int_slope_model, pred_df.random, level = 1)
+
+``` 
+
+```{r}
+
+# Visualize population level predictions and within-site predictions of abundance
+ggplot(orchids) +
+	geom_point(aes(x = humidity, y = abundance, col = site)) +
+	geom_line(aes(x = humidity, y = predicted), size = 2, data = pred_df.fixed) +
+	geom_line(aes(x = humidity, y = random, col = site), data = pred_df.random)
+
+```
+
+# Model selection
+It's time to decide if your random intercept and slope model was an improvement over your random intercept model.
+
+As a reminder, the two models were applied using:
+
+# Apply random intercept model
+random_int_model <- lme(abundance ~ humidity, 
+                        random = ~1 | site,
+                        data = orchids)
+
+# Apply random intercept and slope model
+random_int_slope_model <- lme(abundance ~ humidity, 
+                              random = ~1 + humidity | site,
+                              data = orchids)
+Note that the orchids data set, nlme library, and random_int_model and random_int_slope_model models have been preloaded.
+# Apply a maximum likelihood ratio test
+anova(random_int_model, random_int_slope_model)
+
+# Calculate the corrected p-value
+
+```{r}
+
+LR <- ((-420.2667) - (-408.7254)) * -2
+((1 - pchisq(LR, 1)) + (1 - pchisq(LR, 2))) * 0.5
+
+```
+
+```{r}
+# Apply a maximum likelihood ratio test
+anova(random_int_model, random_int_slope_model)
+
+# Calculate the corrected p-value
+LR <- ((-420.2667) - (-408.7254)) * -2
+((1 - pchisq(LR, 1)) + (1 - pchisq(LR, 2))) * 0.5
+
+# Print the model that has fewer parameters
+fewer_parameters <- random_int_model
+fewer_parameters
+
+# Print the model that has the better AIC value
+better_aic_value <- random_int_slope_model
+better_aic_value
+```
+
+# Calculating variances
+
+The variation around both the intercept and slope is randomly influenced by site, and the degree to which each is influenced is normally distributed with a certain variance. Use the model output to calculate the variance of the random intercept and the variance of the random slope.
+
+Note that the orchids data set, nlme library, and random_int_slope_model have been preloaded
+```{r}
+# View the model output
+random_int_slope_model
+
+# Calculate the estimated variance of random intercept
+variance_int <- 7.3277203 ^ 2
+
+# Calculate the estimated variance of random slope
+variance_slope <- 0.1387053 ^ 2
+
+# Print the higher estimate
+variance_int
+```
+
+# Understanding model structures
+
+Demonstrate your knowledge of model structures.
+
+Here are 6 models built using sample data called myData with a response y, predictor variable x, and categorical variable group.
+
+model1 <- gls(y ~ x, data = myData)
+model2 <- glm(y ~ x, data = myData)
+model3 <- glm(y ~ x * group, data = myData, family = "gaussian")
+model4 <- glm.nb(y ~ x, data = myData)
+model5 <- lme(y ~ x, random = ~1|group, data = myData)
+model6 <- lme(y ~ x, random = ~1 + x|group, data = myData)
+The myData data set, dispersion() function, nlme and MASS libraries and the models have been preloaded.
+
+```{r}
+
+```
+
+#  Model selection techniques I
+Demonstrate your knowledge of model selection techniques.
+
+Here are 5 models built using myData with response y, predictor variable x, and categorical variable group.
+
+model1 <- gls(y ~ x, data = myData)
+model2 <- glm(y ~ x, data = myData)
+model3 <- glm(y ~ x * group, data = myData, family = "gaussian")
+model4 <- lme(y ~ x, random = ~1|group, data = myData, method = "REML")
+model5 <- lme(y ~ x, random = ~1|group, data = myData, method = "ML")
+The myData data set, dispersion() function, nlme ggplot2 and MASS libraries and the models have been preloaded.
+
+```{r}
+# Apply a likelihood ratio test
+anova(model1, model4)
+
+# Correct the p-value
+LR <- ((-295.0109) - (-272.0328)) * -2
+(1 - pchisq(LR, 1)) * 0.5
+
+```
+
+```{r}
+# Generate data frame of residuals and fitted values
+diag <- data.frame(residuals = resid(model2), fitted = fitted(model2))
+
+# Visualize residuals vs fitted values
+ggplot(diag) +
+	geom_point(aes(x = fitted, y = residuals))
+```
+
+# Generating predictions from models
+Demonstrate your knowledge of generating predictions from different types of models.
+
+Here are 3 models built using sample data called myData that has a response of y, predictor variable of x, and categorical variable of group.
+
+model1 <- glm(y ~ x * group, data = myData, family = "gaussian")
+model2 <- glm.nb(y ~ x * group, data = myData)
+model3 <- lme(y ~ x, random = ~1 + x|group, data = myData)
+Note the myData data set, nlme and MASS libraries, and the models above have been preloaded.
+
+```{r}
+# Create a data frame where x is 35 and 40 at each group
+pred_df <- expand.grid(x = c(35, 40), group = unique(myData$group))
+
+# Generate predictions using model1
+predict(model1, pred_df)
+
+# Generate predictions using model2
+predict(model2, pred_df, type = "response")
+
+# Generate predictions using model3
+predict(model3, pred_df, level = 1)
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+```{r}
+
+```
+
+```{r}
+
+```
+```{r}
+
+```
+
+```{r}
+
+```
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+```{r}
+
+```
+
